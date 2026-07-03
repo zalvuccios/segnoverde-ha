@@ -38,6 +38,8 @@ class SegnoverdeData:
     annuo: dict[str, Any] = field(default_factory=dict)
     spesa_annua: float | None = None
     storico_kwh: dict[str, float] = field(default_factory=dict)
+    storico_importi: dict[str, float] = field(default_factory=dict)
+    storico_mensile: dict[str, dict[str, Any]] = field(default_factory=dict)
     codice_cliente: str = ""
     login_ok: bool = True
     last_update: str = ""
@@ -88,6 +90,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             f"{DOMAIN}_{entry.entry_id}.json",
         )
         self._cached_storico: dict[str, float] = {}
+        self._cached_storico_importi: dict[str, float] = {}
         self._cached_fatture_pdf: set[str] = set()
         self._load_cache()
 
@@ -97,22 +100,32 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             with open(self._cache_file, encoding="utf-8") as fp:
                 cache = json.load(fp)
             self._cached_storico = dict(cache.get("storico_kwh", {}))
+            self._cached_storico_importi = dict(cache.get("storico_importi", {}))
             self._cached_fatture_pdf = set(cache.get("fatture_pdf", []))
             _LOGGER.debug(
-                "Cache caricato: %s voci storico kWh", len(self._cached_storico)
+                "Cache caricato: %s voci storico kWh, %s importi",
+                len(self._cached_storico), len(self._cached_storico_importi),
             )
         except (FileNotFoundError, json.JSONDecodeError):
             self._cached_storico = {}
+            self._cached_storico_importi = {}
             self._cached_fatture_pdf = set()
 
     def _save_cache(
-        self, storico: dict[str, float], fatture_pdf: set[str]
+        self,
+        storico: dict[str, float],
+        fatture_pdf: set[str],
+        storico_importi: dict[str, float] | None = None,
     ) -> None:
         try:
             os.makedirs(os.path.dirname(self._cache_file), exist_ok=True)
             with open(self._cache_file, "w", encoding="utf-8") as fp:
                 json.dump(
-                    {"storico_kwh": storico, "fatture_pdf": list(fatture_pdf)},
+                    {
+                        "storico_kwh": storico,
+                        "storico_importi": storico_importi or {},
+                        "fatture_pdf": list(fatture_pdf),
+                    },
                     fp,
                     ensure_ascii=False,
                     indent=2,
@@ -133,8 +146,16 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Errore portale Segnoverde: {err}") from err
 
         nuova_storico: dict[str, float] = dict(self._cached_storico)
+        nuova_storico_importi: dict[str, float] = dict(self._cached_storico_importi)
         fatts_pdf_keys: set[str] = set(self._cached_fatture_pdf)
         storico_annuo: dict[str, Any] = {}
+
+        # Popola gli importi mensili da TUTTE le fatture (sempre disponibili
+        # dall'elenco, senza bisogno di PDF)
+        for f in fatture:
+            if f.mese_idx:
+                chiave = f"{f.mese_idx:02d}_{f.anno}"
+                nuova_storico_importi[chiave] = f.importo
 
         if fatture:
             ult = fatture[0]  # più recente in cima
@@ -167,19 +188,49 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         ]
         ultima = fatture_dict[0] if fatture_dict else {}
         spesa_annua = storico_annuo.get("spesa_annua")
+
+        # Totale consumo annuo = F1 + F2 + F3
+        f1, f2, f3 = (storico_annuo.get("f1"), storico_annuo.get("f2"), storico_annuo.get("f3"))
+        totale_annuo = None
+        if f1 is not None or f2 is not None or f3 is not None:
+            totale_annuo = (f1 or 0) + (f2 or 0) + (f3 or 0)
+
         annuo = {
-            "f1": storico_annuo.get("f1"),
-            "f2": storico_annuo.get("f2"),
-            "f3": storico_annuo.get("f3"),
+            "f1": f1,
+            "f2": f2,
+            "f3": f3,
+            "totale": totale_annuo,
             "periodo_dal": storico_annuo.get("periodo_dal"),
             "periodo_al": storico_annuo.get("periodo_al"),
             "spesa_periodo_dal": storico_annuo.get("spesa_periodo_dal"),
             "spesa_periodo_al": storico_annuo.get("spesa_periodo_al"),
         }
 
+        # Storico mensile combinato: {mm_aaaa: {importo, kwh, stato, numero_fattura, scadenza}}
+        tutte_chiavi = sorted(set(nuova_storico) | set(nuova_storico_importi))
+        mappa_fatture = {
+            f"{f.mese_idx:02d}_{f.anno}" if f.mese_idx else None: f
+            for f in fatture
+        }
+        storico_mensile: dict[str, dict[str, Any]] = {}
+        for chiave in tutte_chiavi:
+            f_obj = mappa_fatture.get(chiave)
+            storico_mensile[chiave] = {
+                "importo": nuova_storico_importi.get(chiave),
+                "kwh": nuova_storico.get(chiave),
+                "stato": (f_obj.stato if f_obj else None),
+                "numero_fattura": (f_obj.numero_fattura if f_obj else None),
+                "scadenza": (
+                    f_obj.scadenza.isoformat() if f_obj and f_obj.scadenza else None
+                ),
+            }
+
         self._cached_storico = nuova_storico
+        self._cached_storico_importi = nuova_storico_importi
         self._cached_fatture_pdf = fatts_pdf_keys
-        self._save_cache(nuova_storico, fatts_pdf_keys)
+        self._save_cache(
+            nuova_storico, fatts_pdf_keys, nuova_storico_importi
+        )
 
         return SegnoverdeData(
             fatture=fatture_dict,
@@ -188,6 +239,8 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             annuo=annuo,
             spesa_annua=spesa_annua,
             storico_kwh=dict(nuova_storico),
+            storico_importi=dict(nuova_storico_importi),
+            storico_mensile=storico_mensile,
             codice_cliente=self._entry.data.get("codice_cliente", ""),
             login_ok=True,
             last_update=datetime.now().isoformat(),
@@ -228,7 +281,13 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             return
 
         nuova_storico: dict[str, float] = dict(self._cached_storico)
+        nuova_importi: dict[str, float] = dict(self._cached_storico_importi)
         fatts_keys: set[str] = set(self._cached_fatture_pdf)
+        # Aggiorna gli importi da tutte le fatture (sempre disponibili senza PDF)
+        for f in fatture:
+            if f.mese_idx:
+                nuova_importi[f"{f.mese_idx:02d}_{f.anno}"] = f.importo
+        # Download dei PDF non ancora in cache
         for f in fatture:
             if f.numero_fattura in fatts_keys or not f.download_token:
                 continue
@@ -244,8 +303,9 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             self._maybe_save_pdf(f, pdf)
             await asyncio.sleep(1.0)  # rate-limit cortese
         self._cached_storico = nuova_storico
+        self._cached_storico_importi = nuova_importi
         self._cached_fatture_pdf = fatts_keys
-        self._save_cache(nuova_storico, fatts_keys)
+        self._save_cache(nuova_storico, fatts_keys, nuova_importi)
         await self.async_request_refresh()
 
     async def async_scarica_pdf_fattura(self, numero_fattura: str | None) -> str | None:

@@ -37,7 +37,10 @@
           "f2": { "name": "Fascia F2" },
           "f3": { "name": "Fascia F3" },
           "potenza_max": { "name": "Potenza massima" },
-          "pdf_path": { "name": "PDF" }
+          "totale_fatture": { "name": "Totale fatture nello storico" },
+          "fatture_non_pagate": { "name": "Numero fatture non pagate" },
+          "ultimo_aggiornamento": { "name": "Ultimo aggiornamento" },
+          "storico_mensile": { "name": "Storico mensile" }
         }
       },
       "ultimo_consumo_kwh": {
@@ -46,6 +49,7 @@
       "spesa_annua": {
         "name": "Spesa annua"
       },
+      "consumo_annuo_totale": { "name": "Consumo annuo totale" },
       "consumo_annuo_f1": { "name": "Consumo annuo F1" },
       "consumo_annuo_f2": { "name": "Consumo annuo F2" },
       "consumo_annuo_f3": { "name": "Consumo annuo F3" }

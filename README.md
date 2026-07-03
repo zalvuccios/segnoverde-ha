@@ -1,6 +1,8 @@
-# Segnoverde per Home Assistant
+# <img src="images/logo.png" width="64" align="top"> Segnoverde per Home Assistant
 
 Integrazione non ufficiale per [Segnoverde S.p.A.](https://www.segnoverde.it/) che espone in Home Assistant le **fatture** e i **consumi kWh** del tuo contratto luce (e gas, in futuro) letti dall'area clienti [`segnoverde-webcli.serviceict.it`](https://segnoverde-webcli.serviceict.it/PortaleClienti/Home/Login).
+
+![banner](images/banner.png)
 
 > ⚠️ **Disclaimer**: integrazione non ufficiale, non affiliata a Segnoverde S.p.A. Utilizza tecniche di scraping del portale clienti accessibile con Codice Cliente + Password. Le credenziali restano salvate nella tua istanza di Home Assistant (in `config_entries` crittografate) e non escono dal tuo sistema.
 
@@ -18,13 +20,27 @@ Integrazione non ufficiale per [Segnoverde S.p.A.](https://www.segnoverde.it/) c
 
 | Entità | Classe | Stato | Note |
 |---|---|---|---|
-| `sensor.segnoverde_ultima_fattura_importo` | Monetario | Importo (€) | attributi: numero, scadenza, stato, kWh, F1/F2/F3, prezzo medio, periodo, ecc. |
+| `sensor.segnoverde_ultima_fattura_importo` | Monetario | Importo (€) | attributi: numero, scadenza, stato, kWh, F1/F2/F3, prezzo medio, periodo, **storico_mensile** (importo + kWh + stato per ogni mese) |
 | `sensor.segnoverde_ultimo_consumo_kwh` | Energia | kWh ultima bolletta | attributi: storico kWh per mese/anno |
 | `sensor.segnoverde_spesa_annua` | Monetario | Spesa annua (€) | periodo da/al |
+| `sensor.segnoverde_consumo_annuo_totale` | Energia | **F1+F2+F3 (anno mobile)** | attributi: f1, f2, f3, periodo da/al |
 | `sensor.segnoverde_consumo_annuo_f1` | Energia | kWh F1 (anno mobile) | |
 | `sensor.segnoverde_consumo_annuo_f2` | Energia | kWh F2 (anno mobile) | |
 | `sensor.segnoverde_consumo_annuo_f3` | Energia | kWh F3 (anno mobile) | |
 | `binary_sensor.segnoverde_fatture_non_pagate` | Binary | ON se fatture INSOLUTE | elenco in attributi |
+
+### Attributo `storico_mensile`
+
+Il sensore `sensor.segnoverde_ultima_fattura_importo` espone l'attributo `storico_mensile`: un dizionario con chiave `MM_AAAA` e per ogni mese `{importo, kwh, stato, numero_fattura, scadenza}`. Esempio:
+
+```json
+{
+  "05_2026": {"importo": 32.90, "kwh": 20.07, "stato": "PAGATA", "numero_fattura": "EE00867832/2026", "scadenza": "2026-07-06"},
+  "04_2026": {"importo": 53.11, "kwh": 101.84, "stato": "PAGATA", "numero_fattura": "EE00720407/2026", "scadenza": "2026-06-04"}
+}
+```
+
+Gli **importi** sono disponibili per **tutti i mesi** fin dal primo (non richiedono il PDF), mentre i **kWh** vengono popolati progressivamente al download dei PDF (vedi servizio `scarica_storico` per lo storico completo).
 
 ## Installazione
 
