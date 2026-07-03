@@ -1,0 +1,21 @@
+scarica_pdf:
+  name: Scarica PDF fattura
+  description: "Scarica il PDF di una o più fatture Segnoverde nella cartella /config/segnoverde_pdfs"
+  fields:
+    numero_fattura:
+      name: Numero fattura
+      description: "Numero fattura (es. EE00867832/2026). Lasciare vuoto per scaricare l'ultima."
+      example: "EE00867832/2026"
+      required: false
+      selector:
+        text:
+
+forza_aggiornamento:
+  name: Forza aggiornamento
+  description: "Forza il refresh dei dati Segnoverde senza attendere il prossimo intervallo pianificato."
+  fields: {}
+
+scarica_storico:
+  name: Scarica storico fatture
+  description: "Scarica tutti i PDF delle fatture passate e popola lo storico kWh completo. Da usare una tantum (può richiedere qualche minuto)."
+  fields: {}

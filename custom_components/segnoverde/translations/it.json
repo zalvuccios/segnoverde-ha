@@ -1,0 +1,58 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Segnoverde",
+        "description": "Inserisci le credenziali dell'area clienti Segnoverde (quelle usate su segnoverde-webcli.serviceict.it).",
+        "data": {
+          "codice_cliente": "Codice cliente",
+          "password": "Password",
+          "scan_interval": "Intervallo di aggiornamento (ore)",
+          "download_folder": "Cartella download PDF (relativa a /config)"
+        }
+      }
+    },
+    "error": {
+      "auth": "Codice cliente o password non validi.",
+      "pwd_expired": "Password scaduta: accedi al portale Segnoverde e cambiala.",
+      "reg_not_active": "Registrazione non attiva: controlla l'email di attivazione.",
+      "unknown": "Errore di comunicazione con il portale Segnoverde."
+    },
+    "abort": {
+      "already_configured": "Questo codice cliente è già configurato."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ultima_fattura_importo": {
+        "name": "Ultima fattura importo",
+        "state_attributes": {
+          "numero_fattura": { "name": "Numero fattura" },
+          "scadenza": { "name": "Scadenza" },
+          "stato": { "name": "Stato pagamento" },
+          "periodo": { "name": "Periodo" },
+          "kwh": { "name": "Energia fatturata" },
+          "prezzo_medio": { "name": "Prezzo medio" },
+          "f1": { "name": "Fascia F1" },
+          "f2": { "name": "Fascia F2" },
+          "f3": { "name": "Fascia F3" },
+          "potenza_max": { "name": "Potenza massima" },
+          "pdf_path": { "name": "PDF" }
+        }
+      },
+      "ultimo_consumo_kwh": { "name": "Ultimo consumo mensile" },
+      "spesa_annua": { "name": "Spesa annua" },
+      "consumo_annuo_f1": { "name": "Consumo annuo F1" },
+      "consumo_annuo_f2": { "name": "Consumo annuo F2" },
+      "consumo_annuo_f3": { "name": "Consumo annuo F3" }
+    },
+    "binary_sensor": {
+      "fatture_non_pagate": { "name": "Fatture non pagate" }
+    }
+  },
+  "services": {
+    "scarica_pdf": { "name": "Scarica PDF fattura" },
+    "forza_aggiornamento": { "name": "Forza aggiornamento" },
+    "scarica_storico": { "name": "Scarica storico fatture" }
+  }
+}
