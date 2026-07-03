@@ -33,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 
 SERVICE_SCARICA_PDF = "scarica_pdf"
 SERVICE_FORZA_AGGIORNAMENTO = "forza_aggiornamento"
-SERVICE_SCARICA_STORICO = "scarica_storico"  # non esposto via UI ma interno
+SERVICE_SCARICA_STORICO = "scarica_storico"
 
 SCHEMA_SCARICA_PDF = vol.Schema(
     {
@@ -42,19 +42,36 @@ SCHEMA_SCARICA_PDF = vol.Schema(
 )
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Setup di un'istanza Segnoverde da config entry."""
-    codice_cliente = entry.data[CONF_CODICE_CLIENTE]
-    password = entry.data[CONF_PASSWORD]
-    scan_hours = entry.data.get(CONF_SCAN_INTERVAL, 12)
-    download_folder = entry.data.get(CONF_DOWNLOAD_FOLDER) or None
-
+def _compute_scan_interval(entry: ConfigEntry) -> timedelta:
+    """Ricava il scan_interval (timedelta) dalle options del config entry."""
+    hours = entry.options.get(
+        CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, 12)
+    )
     try:
-        scan_interval = timedelta(hours=int(scan_hours))
+        scan_interval = timedelta(hours=int(hours))
     except (TypeError, ValueError):
         scan_interval = DEFAULT_SCAN_INTERVAL
     if scan_interval < MIN_SCAN_INTERVAL:
         scan_interval = MIN_SCAN_INTERVAL
+    return scan_interval
+
+
+def _compute_download_folder(entry: ConfigEntry) -> str | None:
+    """Cartella di download PDF (None per disabilitare)."""
+    folder = entry.options.get(
+        CONF_DOWNLOAD_FOLDER, entry.data.get(CONF_DOWNLOAD_FOLDER, "segnoverde_pdfs")
+    )
+    if not folder:
+        return None
+    return str(folder)
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Setup di un'istanza Segnoverde da config entry."""
+    codice_cliente = entry.data[CONF_CODICE_CLIENTE]
+    password = entry.data[CONF_PASSWORD]
+    scan_interval = _compute_scan_interval(entry)
+    download_folder = _compute_download_folder(entry)
 
     session = async_get_clientsession(hass)
     client = SegnoverdeApiClient(codice_cliente, password, session)
@@ -87,8 +104,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         coordinator: SegnoverdeCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
-        await coordinator._client.async_close()  # noqa: SLF001
+        await coordinator.client.async_close()
     return unload_ok
+
+
+async def async_update_options(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Aggiorna le options senza reinstallare."""
+    # HA richiama async_setup_entry dopo un reload automatico
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:

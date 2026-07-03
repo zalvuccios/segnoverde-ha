@@ -1,4 +1,4 @@
-"""Config flow per Segnoverde."""
+"""Config flow e options flow per Segnoverde."""
 from __future__ import annotations
 
 import logging
@@ -6,7 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -18,12 +18,12 @@ from .api import (
     SegnoverdeRegNotActiveError,
 )
 from .const import (
-    BASE_URL,
     CONF_CODICE_CLIENTE,
     CONF_DOWNLOAD_FOLDER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     DOMAIN,
+    MIN_SCAN_INTERVAL_HOURS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,13 +45,33 @@ def _schema_user(defaults: dict[str, Any] | None = None) -> vol.Schema:
                 description={
                     "suggested_value": defaults.get(CONF_SCAN_INTERVAL, 12)
                 },
-            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=168)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL_HOURS, max=168)),
             vol.Optional(
                 CONF_DOWNLOAD_FOLDER,
                 description={
                     "suggested_value": defaults.get(
                         CONF_DOWNLOAD_FOLDER, "segnoverde_pdfs"
                     )
+                },
+            ): str,
+        }
+    )
+
+
+def _schema_options(defaults: dict[str, Any] | None = None) -> vol.Schema:
+    defaults = defaults or {}
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_SCAN_INTERVAL,
+                description={
+                    "suggested_value": defaults.get(CONF_SCAN_INTERVAL, 12)
+                },
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL_HOURS, max=168)),
+            vol.Optional(
+                CONF_DOWNLOAD_FOLDER,
+                description={
+                    "suggested_value": defaults.get(CONF_DOWNLOAD_FOLDER, "segnoverde_pdfs")
                 },
             ): str,
         }
@@ -99,7 +119,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.FlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            # unique id per codice cliente
             await self.async_set_unique_id(user_input[CONF_CODICE_CLIENTE])
             self._abort_if_unique_id_configured()
             try:
@@ -115,6 +134,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={
                         CONF_CODICE_CLIENTE: user_input[CONF_CODICE_CLIENTE],
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
+                    options={
                         CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 12),
                         CONF_DOWNLOAD_FOLDER: user_input.get(
                             CONF_DOWNLOAD_FOLDER, "segnoverde_pdfs"
@@ -124,4 +145,36 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user", data_schema=_schema_user(), errors=errors
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> "SegnoverdeOptionsFlow":
+        """Options flow: modifica impostazioni senza reinstallare."""
+        return SegnoverdeOptionsFlow(config_entry)
+
+
+class SegnoverdeOptionsFlow(config_entries.OptionsFlow):
+    """Options flow per modificare scan_interval e cartella PDF."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self._config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        defaults = {
+            **{
+                CONF_SCAN_INTERVAL: 12,
+                CONF_DOWNLOAD_FOLDER: "segnoverde_pdfs",
+            },
+            **self._config_entry.options,
+        }
+        return self.async_show_form(
+            step_id="init", data_schema=_schema_options(defaults)
         )

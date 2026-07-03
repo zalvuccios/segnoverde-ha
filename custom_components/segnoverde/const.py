@@ -5,7 +5,7 @@ from datetime import timedelta
 
 DOMAIN = "segnoverde"
 
-# Chiavi config entry
+# Chiavi config entry (data + options)
 CONF_CODICE_CLIENTE = "codice_cliente"
 CONF_PASSWORD = "password"
 CONF_DOWNLOAD_FOLDER = "download_folder"
@@ -13,8 +13,10 @@ CONF_SCAN_INTERVAL = "scan_interval"
 
 DEFAULT_SCAN_INTERVAL = timedelta(hours=12)
 MIN_SCAN_INTERVAL = timedelta(minutes=30)
+DEFAULT_SCAN_INTERVAL_HOURS = 12
+MIN_SCAN_INTERVAL_HOURS = 1
 
-# Endpoint portal
+# Endpoint portale
 BASE_URL = "https://segnoverde-webcli.serviceict.it/PortaleClienti"
 
 # Stati pagamento
@@ -27,4 +29,7 @@ LOGIN_PWDEXP = "PWDEXP"
 LOGIN_REGNONATT = "REGNONATT"
 LOGIN_NEWCDCLI = "NEWCDCLI"
 
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "button"]
+
+CONF_SCAN_INTERVAL_HOURS_KEY = "scan_interval"
+CONF_DOWNLOAD_FOLDER_KEY = "download_folder"

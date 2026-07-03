@@ -97,6 +97,19 @@ SENSORS: tuple[SegnoverdeSensorDescription, ...] = (
         exists_fn=lambda d: d.annuo.get("totale") is not None,
     ),
     SegnoverdeSensorDescription(
+        key="stato_integrazione",
+        translation_key="stato_integrazione",
+        value_fn=lambda d: "online" if d.login_ok else "offline",
+        icon="mdi:check-network",
+        attr_fn=lambda d: {
+            "login_ok": d.login_ok,
+            "codice_cliente": d.codice_cliente,
+            "ultimo_aggiornamento": d.last_update,
+            "numero_fatture_totali": len(d.fatture),
+        },
+        exists_fn=lambda d: True,
+    ),
+    SegnoverdeSensorDescription(
         key="spesa_annua",
         translation_key="spesa_annua",
         device_class=SensorDeviceClass.MONETARY,

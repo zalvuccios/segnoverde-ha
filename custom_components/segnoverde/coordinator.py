@@ -21,7 +21,11 @@ from .api import (
     SegnoverdePwdExpiredError,
 )
 from .const import (
+    CONF_DOWNLOAD_FOLDER,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MIN_SCAN_INTERVAL,
     STATO_PAGATA,
 )
 from .parser import parse_fattura_pdf, parse_storico_annuo
@@ -82,7 +86,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN}_{entry.entry_id}",
             update_interval=scan_interval,
         )
-        self._client = client
+        self.client = client
         self._entry = entry
         self._download_folder = download_folder
         self._cache_file = os.path.join(
@@ -140,9 +144,9 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> SegnoverdeData:
         try:
-            q_session = await self._client.async_login()
-            tokens = await self._client.async_get_tokens(q_session)
-            fatture = await self._client.async_get_fatture(tokens["bollette"])
+            q_session = await self.client.async_login()
+            tokens = await self.client.async_get_tokens(q_session)
+            fatture = await self.client.async_get_fatture(tokens["bollette"])
         except SegnoverdePwdExpiredError as err:
             raise UpdateFailed("Password scaduta: rivalidare le credenziali.") from err
         except SegnoverdeAuthError as err:
@@ -181,7 +185,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
                     ult.numero_fattura,
                 )
                 try:
-                    pdf_bytes = await self._client.async_download_pdf(
+                    pdf_bytes = await self.client.async_download_pdf(
                         ult.download_token
                     )
                     fatts_pdf_keys.add(ult.numero_fattura)
@@ -307,9 +311,9 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
     async def async_scarica_storico(self) -> None:
         """Scarica tutti i PDF non ancora in cache per popolare lo storico kWh."""
         try:
-            q_session = await self._client.async_login()
-            tokens = await self._client.async_get_tokens(q_session)
-            fatture = await self._client.async_get_fatture(tokens["bollette"])
+            q_session = await self.client.async_login()
+            tokens = await self.client.async_get_tokens(q_session)
+            fatture = await self.client.async_get_fatture(tokens["bollette"])
         except (SegnoverdeAuthError, SegnoverdeApiError) as err:
             _LOGGER.error("Login fallito per storico: %s", err)
             return
@@ -330,7 +334,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             if not f.download_token:
                 continue
             try:
-                pdf = await self._client.async_download_pdf(f.download_token)
+                pdf = await self.client.async_download_pdf(f.download_token)
             except SegnoverdeApiError as err:
                 _LOGGER.warning("Download %s fallito: %s", f.numero_fattura, err)
                 continue
@@ -355,9 +359,9 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
     async def async_scarica_pdf_fattura(self, numero_fattura: str | None) -> str | None:
         """Scarica il PDF di una fattura specifica (o l'ultima se None)."""
         try:
-            q_session = await self._client.async_login()
-            tokens = await self._client.async_get_tokens(q_session)
-            fatture = await self._client.async_get_fatture(tokens["bollette"])
+            q_session = await self.client.async_login()
+            tokens = await self.client.async_get_tokens(q_session)
+            fatture = await self.client.async_get_fatture(tokens["bollette"])
         except (SegnoverdeAuthError, SegnoverdeApiError) as err:
             _LOGGER.error("Login fallito: %s", err)
             return None
@@ -373,7 +377,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         if not target or not target.download_token:
             return None
         try:
-            pdf = await self._client.async_download_pdf(target.download_token)
+            pdf = await self.client.async_download_pdf(target.download_token)
         except SegnoverdeApiError as err:
             _LOGGER.warning("Download %s fallito: %s", target.numero_fattura, err)
             return None

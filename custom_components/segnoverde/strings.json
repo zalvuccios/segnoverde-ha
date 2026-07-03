@@ -22,6 +22,18 @@
       "already_configured": "Questo codice cliente è già configurato."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Segnoverde",
+        "description": "Modifica le impostazioni dell'integrazione Segnoverde.",
+        "data": {
+          "scan_interval": "Intervallo di aggiornamento (ore)",
+          "download_folder": "Cartella download PDF (relativa a /config, vuoto per disabilitare)"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "ultima_fattura_importo": {
@@ -43,19 +55,29 @@
           "storico_mensile": { "name": "Storico mensile" }
         }
       },
-      "ultimo_consumo_kwh": {
-        "name": "Ultimo consumo mensile"
-      },
-      "spesa_annua": {
-        "name": "Spesa annua"
-      },
+      "ultimo_consumo_kwh": { "name": "Ultimo consumo mensile" },
+      "spesa_annua": { "name": "Spesa annua" },
       "consumo_annuo_totale": { "name": "Consumo annuo totale" },
       "consumo_annuo_f1": { "name": "Consumo annuo F1" },
       "consumo_annuo_f2": { "name": "Consumo annuo F2" },
-      "consumo_annuo_f3": { "name": "Consumo annuo F3" }
+      "consumo_annuo_f3": { "name": "Consumo annuo F3" },
+      "stato_integrazione": {
+        "name": "Stato integrazione",
+        "state_attributes": {
+          "login_ok": { "name": "Login riuscito" },
+          "codice_cliente": { "name": "Codice cliente" },
+          "ultimo_aggiornamento": { "name": "Ultimo aggiornamento" },
+          "numero_fatture_totali": { "name": "Totale fatture" }
+        }
+      }
     },
     "binary_sensor": {
       "fatture_non_pagate": { "name": "Fatture non pagate" }
+    },
+    "button": {
+      "scarica_storico": { "name": "Scarica storico fatture" },
+      "forza_aggiornamento": { "name": "Forza aggiornamento" },
+      "scarica_pdf_ultima": { "name": "Scarica PDF ultima fattura" }
     }
   },
   "services": {

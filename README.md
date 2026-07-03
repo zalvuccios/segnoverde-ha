@@ -27,7 +27,11 @@ Integrazione non ufficiale per [Segnoverde S.p.A.](https://www.segnoverde.it/) c
 | `sensor.segnoverde_consumo_annuo_f1` | Energia | kWh F1 (anno mobile) | |
 | `sensor.segnoverde_consumo_annuo_f2` | Energia | kWh F2 (anno mobile) | |
 | `sensor.segnoverde_consumo_annuo_f3` | Energia | kWh F3 (anno mobile) | |
+| `sensor.segnoverde_stato_integrazione` | Diagnostico | `online`/`offline` | attributi: login_ok, codice cliente, ultimo aggiornamento, n.fatture |
 | `binary_sensor.segnoverde_fatture_non_pagate` | Binary | ON se fatture INSOLUTE | elenco in attributi |
+| `button.segnoverde_scarica_storico` | Button | — | Cliccabile: scarica tutti i PDF + popola storico kWh completo |
+| `button.segnoverde_forza_aggiornamento` | Button | — | Cliccabile: forza refresh immediato |
+| `button.segnoverde_scarica_pdf_ultima` | Button | — | Cliccabile: scarica il PDF dell'ultima fattura |
 
 ### Attributo `storico_mensile`
 
@@ -66,13 +70,59 @@ Nel flow di configurazione inserisci:
 - **Intervallo aggiornamento** (ore, predefinito 12, min 1)
 - **Cartella download PDF** (relativa a `/config`, predefinita `segnoverde_pdfs`)
 
-## Servizi disponibili
+### Modificare le impostazioni in un secondo momento
+
+Non è necessario reinstallare l'integrazione per cambiare parametri:
+
+1. **Impostazioni → Dispositivi e servizi** → clicca sull'integrazione **Segnoverde**
+2. Pulsante **Configura** (ingranaggio)
+3. Modifica **Intervallo di aggiornamento** e/o **Cartella download PDF** → **Salva**
+
+L'integrazione si ricarica automaticamente con i nuovi valori.
+
+## Azioni rapide (button) e servizi
+
+Non serve aprire Strumenti Sviluppatore: you puoi cliccare direttamente i **button** dalla card dell'integrazione (vedi sezione esempi Lovelace):
+
+| Entità button | Azione |
+|---|---|
+| `button.segnoverde_scarica_storico` | Scarica tutti i PDF e popola lo storico kWh completo (~1 fattura/sec) |
+| `button.segnoverde_forza_aggiornamento` | Forza refresh immediato |
+| `button.segnoverde_scarica_pdf_ultima` | Scarica solo il PDF dell'ultima fattura |
+
+Servizi equivalenti (per uso in automazioni):
 
 | Servizio | Descrizione |
 |---|---|
 | `segnoverde.scarica_pdf` | Scarica il PDF di una fattura (`numero_fattura`) o dell'ultima se omesso |
 | `segnoverde.forza_aggiornamento` | Forza refresh immediato |
 | `segnoverde.scarica_storico` | Scarica tutti i PDF non ancora in cache e popola lo storico kWh completo |
+
+## Esempi Lovelace
+
+### Card con i 3 button rapidi
+
+```yaml
+- type: entities
+  title: Segnoverde - Azioni
+  entities:
+    - button.segnoverde_forza_aggiornamento
+    - button.segnoverde_scarica_pdf_ultima
+    - button.segnoverde_scarica_storico
+```
+
+### Card overview fatture
+
+```yaml
+- type: entities
+  title: Segnoverde - Bollette
+  entities:
+    - sensor.segnoverde_ultima_fattura_importo
+    - sensor.segnoverde_ultimo_consumo_kwh
+    - sensor.segnoverde_consumo_annuo_totale
+    - sensor.segnoverde_spesa_annua
+    - binary_sensor.segnoverde_fatture_non_pagate
+```
 
 ## Esempi di automazione
 
@@ -112,10 +162,11 @@ custom_components/segnoverde/
 ├── api.py              # client HTTP + parsing HTML elenco fatture
 ├── parser.py           # parsing PDF bollette (pdfplumber)
 ├── coordinator.py      # DataUpdateCoordinator + cache storico
-├── config_flow.py      # flow UI
+├── config_flow.py      # flow UI + **options flow (Configura)**
 ├── entity.py           # classe base
 ├── sensor.py           # sensori
 ├── binary_sensor.py    # binary sensor fatture insolute
+├── button.py           # button rapidi (scarica_storico, forza, pdf)
 ├── const.py
 ├── services.yaml
 ├── strings.json
