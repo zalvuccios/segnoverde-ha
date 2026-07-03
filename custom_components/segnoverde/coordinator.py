@@ -91,6 +91,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         )
         self._cached_storico: dict[str, float] = {}
         self._cached_storico_importi: dict[str, float] = {}
+        self._cached_storico_annuo: dict[str, dict[str, Any]] = {}
         self._cached_fatture_pdf: set[str] = set()
         self._load_cache()
 
@@ -101,6 +102,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
                 cache = json.load(fp)
             self._cached_storico = dict(cache.get("storico_kwh", {}))
             self._cached_storico_importi = dict(cache.get("storico_importi", {}))
+            self._cached_storico_annuo = dict(cache.get("storico_annuo", {}))
             self._cached_fatture_pdf = set(cache.get("fatture_pdf", []))
             _LOGGER.debug(
                 "Cache caricato: %s voci storico kWh, %s importi",
@@ -109,6 +111,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         except (FileNotFoundError, json.JSONDecodeError):
             self._cached_storico = {}
             self._cached_storico_importi = {}
+            self._cached_storico_annuo = {}
             self._cached_fatture_pdf = set()
 
     def _save_cache(
@@ -116,6 +119,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         storico: dict[str, float],
         fatture_pdf: set[str],
         storico_importi: dict[str, float] | None = None,
+        storico_annuo: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         try:
             os.makedirs(os.path.dirname(self._cache_file), exist_ok=True)
@@ -124,6 +128,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
                     {
                         "storico_kwh": storico,
                         "storico_importi": storico_importi or {},
+                        "storico_annuo": storico_annuo or {},
                         "fatture_pdf": list(fatture_pdf),
                     },
                     fp,
@@ -147,6 +152,7 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
 
         nuova_storico: dict[str, float] = dict(self._cached_storico)
         nuova_storico_importi: dict[str, float] = dict(self._cached_storico_importi)
+        nuovo_storico_annuo: dict[str, dict[str, Any]] = dict(self._cached_storico_annuo)
         fatts_pdf_keys: set[str] = set(self._cached_fatture_pdf)
         storico_annuo: dict[str, Any] = {}
 
@@ -159,17 +165,44 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
 
         if fatture:
             ult = fatture[0]  # più recente in cima
-            if ult.download_token and ult.numero_fattura not in fatts_pdf_keys:
+            # Scarica SEMPRE il PDF dell'ultima fattura se non abbiamo ancor
+            # i dati kWh/bolletta (anche se era già scaricata in cache ma il
+            # parsing era fallito). Questo garantisce recupero automatico.
+            ha_dati_pdf = ult.kwh is not None
+            # Recupera lo storico annuo dal cache se presente per questa fattura
+            if ult.numero_fattura in nuovo_storico_annuo and not storico_annuo:
+                storico_annuo = dict(nuovo_storico_annuo[ult.numero_fattura])
+            if ult.download_token and (
+                ult.numero_fattura not in fatts_pdf_keys or not ha_dati_pdf
+                or not storico_annuo
+            ):
+                _LOGGER.info(
+                    "Segnoverde: scarico PDF ultima fattura %s",
+                    ult.numero_fattura,
+                )
                 try:
                     pdf_bytes = await self._client.async_download_pdf(
                         ult.download_token
                     )
                     fatts_pdf_keys.add(ult.numero_fattura)
                     parse_fattura_pdf(pdf_bytes, ult)
-                    storico_annuo = parse_storico_annuo(pdf_bytes)
-                    self._maybe_save_pdf(ult, pdf_bytes)
+                    if ult.kwh is None:
+                        _LOGGER.error(
+                            "Segnoverde: parsing PDF fattura %s NON ha estratto "
+                            "i kWh. Verifica che 'pdfplumber' sia installato "
+                            "correttamente nel proprio ambiente Home Assistant.",
+                            ult.numero_fattura,
+                        )
+                    else:
+                        storico_annuo = parse_storico_annuo(pdf_bytes)
+                        nuovo_storico_annuo[ult.numero_fattura] = dict(storico_annuo)
+                        self._maybe_save_pdf(ult, pdf_bytes)
                 except SegnoverdeApiError as err:
-                    _LOGGER.warning("Download ultima fattura fallito: %s", err)
+                    _LOGGER.error(
+                        "Segnoverde: download PDF ultima fattura %s fallito: %s",
+                        ult.numero_fattura,
+                        err,
+                    )
 
             if ult.kwh is not None and ult.mese_idx:
                 chiave = f"{ult.mese_idx:02d}_{ult.anno}"
@@ -227,9 +260,10 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
 
         self._cached_storico = nuova_storico
         self._cached_storico_importi = nuova_storico_importi
+        self._cached_storico_annuo = nuovo_storico_annuo
         self._cached_fatture_pdf = fatts_pdf_keys
         self._save_cache(
-            nuova_storico, fatts_pdf_keys, nuova_storico_importi
+            nuova_storico, fatts_pdf_keys, nuova_storico_importi, nuovo_storico_annuo
         )
 
         return SegnoverdeData(
@@ -282,14 +316,18 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
 
         nuova_storico: dict[str, float] = dict(self._cached_storico)
         nuova_importi: dict[str, float] = dict(self._cached_storico_importi)
+        nuovo_storico_annuo: dict[str, dict[str, Any]] = dict(self._cached_storico_annuo)
         fatts_keys: set[str] = set(self._cached_fatture_pdf)
         # Aggiorna gli importi da tutte le fatture (sempre disponibili senza PDF)
         for f in fatture:
             if f.mese_idx:
                 nuova_importi[f"{f.mese_idx:02d}_{f.anno}"] = f.importo
-        # Download dei PDF non ancora in cache
+        # Download dei PDF non ancora in cache (o senza kWh buono)
+        prima_numero = fatture[0].numero_fattura if fatture else None
         for f in fatture:
-            if f.numero_fattura in fatts_keys or not f.download_token:
+            if f.numero_fattura in fatts_keys and f.kwh is not None:
+                continue
+            if not f.download_token:
                 continue
             try:
                 pdf = await self._client.async_download_pdf(f.download_token)
@@ -300,12 +338,18 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
             parse_fattura_pdf(pdf, f)
             if f.kwh is not None and f.mese_idx:
                 nuova_storico[f"{f.mese_idx:02d}_{f.anno}"] = f.kwh
+            # Per l'ultima fattura, estrai anche lo storico annuo
+            if f.numero_fattura == prima_numero:
+                s = parse_storico_annuo(pdf)
+                if s:
+                    nuovo_storico_annuo[f.numero_fattura] = dict(s)
             self._maybe_save_pdf(f, pdf)
             await asyncio.sleep(1.0)  # rate-limit cortese
         self._cached_storico = nuova_storico
         self._cached_storico_importi = nuova_importi
+        self._cached_storico_annuo = nuovo_storico_annuo
         self._cached_fatture_pdf = fatts_keys
-        self._save_cache(nuova_storico, fatts_keys, nuova_importi)
+        self._save_cache(nuova_storico, fatts_keys, nuova_importi, nuovo_storico_annuo)
         await self.async_request_refresh()
 
     async def async_scarica_pdf_fattura(self, numero_fattura: str | None) -> str | None:
