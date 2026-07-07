@@ -1,0 +1,20 @@
+# ==========================================================================
+# Card tabella "Storico mensile Segnoverde" — mostra tutti i mesi
+# con importo (€) e kWh consumati. Richiede la card custom "markdown-card"
+# (installabile da HACS) oppure sostituisci con "type: markdown".
+# ==========================================================================
+type: markdown
+title: Storico mensile Segnoverde
+content: >
+  {%- set sm = state_attr('sensor.segnoverde_ultima_fattura_importo','storico_mensile') or {} -%}
+  
+  ### Storico bollette Segnoverde
+  
+  | Mese | Importo (€) | kWh | Stato | Scadenza |
+  |:----:|----:|----:|:----:|:--------:|
+  {%- for k, v in sm.items() -%}
+  {%- set mese_n = k.split('_')[0]|int -%}
+  {%- set anno = k.split('_')[1] -%}
+  {%- set nome = ['(nessuno)','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'] -%}
+  | {{ nome[mese_n] if mese_n else '?' }} {{ anno }} | {{ '%.2f'|format(v.importo|default(0)) }} | {{ v.kwh if v.kwh is not none else '—' }} | {{ v.stato|default('—') }} | {{ v.scadenza|default('—') }} |
+  {%- endfor -%}

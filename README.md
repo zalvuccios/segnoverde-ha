@@ -124,6 +124,13 @@ Servizi equivalenti (per uso in automazioni):
     - binary_sensor.segnoverde_fatture_non_pagate
 ```
 
+### Card completa con tutti i dettagli
+
+Nella cartella [`docs/`](docs/) trovi due YAML pronti da incollare nella dashboard (modalità RAW → Modifica):
+
+- [`docs/lovelace-card.yaml`](docs/lovelace-card.yaml) — card `vertical-stack` con stato, azioni rapide, ultima bolletta, dettaglio fasce F1/F2/F3, consumo annuo e storico.
+- [`docs/lovelace-tabella-storico.yaml`](docs/lovelace-tabella-storico.yaml) — tabella markdown con tutti i mesi (importo + kWh + stato + scadenza) estratta dall'attributo `storico_mensile`.
+
 ## Esempi di automazione
 
 ```yaml

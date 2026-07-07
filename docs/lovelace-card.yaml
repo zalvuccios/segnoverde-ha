@@ -1,0 +1,135 @@
+# ==========================================================================
+# Card Lovelace "Segnoverde - Bollette e consumi" — pronta da incollare
+# Modifica struttura dashboards: modalità RAW (3 puntini in alto a sx → Modifica → RAW)
+# ==========================================================================
+type: vertical-stack
+title: Segnoverde
+cards:
+  # ---- INTESTAZIONE: stato + ultimo aggiornamento + azioni rapide ----
+  - type: entities
+    title: Stato
+    show_header_toggle: false
+    entities:
+      - entity: sensor.segnoverde_stato_integrazione
+        name: Integrazione
+        icon: mdi:check-network
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Ultimo aggiornamento
+        secondary_info: last-changed
+        icon: mdi:update
+      - type: buttons
+        entities:
+          - entity: button.segnoverde_forza_aggiornamento
+            name: Aggiorna ora
+            icon: mdi:refresh
+          - entity: button.segnoverde_scarica_pdf_ultima_fattura
+            name: Scarica PDF ultima
+            icon: mdi:file-download
+          - entity: button.segnoverde_scarica_storico_fatture
+            name: Scarica storico
+            icon: mdi:history
+        name: Azioni rapide
+
+  # ---- ULTIMA BOLLETTA ----
+  - type: glance
+    title: Ultima bolletta
+    columns: 3
+    show_name: true
+    show_state: true
+    entities:
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Importo
+      - entity: sensor.segnoverde_ultimo_consumo_mensile
+        name: Consumo
+      - entity: binary_sensor.segnoverde_fatture_non_pagate
+        name: Insolute
+        tap:
+          action: more-info
+
+  # ---- DETTAGLI ULTIMA FATTURA (attributi) ----
+  - type: entities
+    title: Dettaglio ultima bolletta
+    show_header_toggle: false
+    entities:
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Periodo
+        attribute: periodo
+        icon: mdi:calendar-range
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Numero fattura
+        attribute: numero_fattura
+        icon: mdi:barcode
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Scadenza
+        attribute: scadenza
+        icon: mdi:calendar-alert
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Stato pagamento
+        attribute: stato
+        icon: mdi:cash-check
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Fascia F1 (giorno)
+        attribute: f1
+        icon: mdi:weather-sunny
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Fascia F2 (intermedio)
+        attribute: f2
+        icon: mdi:weather-sunset
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Fascia F3 (notte)
+        attribute: f3
+        icon: mdi:weather-night
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Prezzo medio €/kWh
+        attribute: prezzo_medio
+        icon: mdi:tag
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Potenza max (kW)
+        attribute: potenza_max
+        icon: mdi:flash
+
+  # ---- ANNUO: totali + grafico ----
+  - type: vertical-stack
+    title: Consumo annuo
+    cards:
+      - type: glance
+        columns: 4
+        show_name: true
+        show_state: true
+        entities:
+          - entity: sensor.segnoverde_consumo_annuo_totale
+            name: Totale
+          - entity: sensor.segnoverde_consumo_annuo_f1
+            name: F1
+          - entity: sensor.segnoverde_consumo_annuo_f2
+            name: F2
+          - entity: sensor.segnoverde_consumo_annuo_f3
+            name: F3
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - entity: sensor.segnoverde_spesa_annua
+            name: Spesa annua
+            icon: mdi:currency-eur
+
+  # ---- STORICO kWh MENSILI (grafico a barre) ----
+  # NOTA: richiede che i kWh mensili siano esposti come serie storica.
+  # Poiché i kWh sono cached come attributo storico_mensile, utilizziamo
+  # un sensore template per ogni mese oppure puoi usare la card
+  # custom:bar-card / apexcharts-card. Qui versione semplice con statistic history.
+  - type: history-graph
+    title: Andamento storico fatture (importo €)
+    hours_to_show: 720
+    refresh_interval: 60
+    entities:
+      - sensor.segnoverde_ultima_fattura_importo
+
+  # ---- TUTTI GLI ATTRIBUTI (debug / ispezione) ----
+  - type: entities
+    title: Attributi (storico mensile completo)
+    show_header_toggle: false
+    entities:
+      - entity: sensor.segnoverde_ultima_fattura_importo
+        name: Storico mensile (JSON)
+        attribute: storico_mensile
+        icon: mdi:format-list-bulleted
