@@ -4,8 +4,8 @@
   "codeowners": ["@zalvuccios"],
   "config_flow": true,
   "documentation": "https://github.com/zalvuccios/segnoverde-ha",
+  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/zalvuccios/segnoverde-ha/issues",
   "requirements": ["pdfplumber==0.11.10", "beautifulsoup4==4.12.3"],
-  "iot_class": "cloud_polling",
-  "version": "1.4.0"
+  "version": "1.4.1"
 }

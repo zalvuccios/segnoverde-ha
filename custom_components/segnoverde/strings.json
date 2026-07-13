@@ -86,8 +86,23 @@
     }
   },
   "services": {
-    "scarica_pdf": { "name": "Scarica PDF fattura" },
-    "forza_aggiornamento": { "name": "Forza aggiornamento" },
-    "scarica_storico": { "name": "Scarica storico fatture" }
+    "scarica_pdf": {
+      "name": "Scarica PDF fattura",
+      "description": "Scarica il PDF di una fattura nella cartella configurata.",
+      "fields": {
+        "numero_fattura": {
+          "name": "Numero fattura",
+          "description": "Numero della fattura da scaricare; se omesso viene usata l'ultima."
+        }
+      }
+    },
+    "forza_aggiornamento": {
+      "name": "Forza aggiornamento",
+      "description": "Aggiorna immediatamente dati, fatture e consumi Segnoverde."
+    },
+    "scarica_storico": {
+      "name": "Scarica storico fatture",
+      "description": "Scarica soltanto i PDF mancanti e popola lo storico mensile dei consumi."
+    }
   }
 }
