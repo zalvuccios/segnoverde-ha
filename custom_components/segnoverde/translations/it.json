@@ -3,12 +3,13 @@
     "step": {
       "user": {
         "title": "Segnoverde",
-        "description": "Inserisci le credenziali dell'area clienti Segnoverde (quelle usate su segnoverde-webcli.serviceict.it).",
+        "description": "Inserisci le credenziali dell'area clienti Segnoverde (le trovi sul sito segnoverde-webcli.serviceict.it).",
         "data": {
           "codice_cliente": "Codice cliente",
           "password": "Password",
           "scan_interval": "Intervallo di aggiornamento (ore)",
-          "download_folder": "Cartella download PDF (relativa a /config)"
+          "download_folder": "Cartella download PDF (relativa a /config)",
+          "auto_download_history": "Scarica automaticamente lo storico mancante"
         }
       }
     },
@@ -19,120 +20,7 @@
       "unknown": "Errore di comunicazione con il portale Segnoverde."
     },
     "abort": {
-      "already_configured": "Questo codice cliente Ã¨ giÃ  configurato."
-    }
-  },
-  "entity": {
-    "sensor": {
-      "ultima_fattura_importo": {
-        "name": "Ultima fattura importo",
-        "state_attributes": {
-          "numero_fattura": {
-            "name": "Numero fattura"
-          },
-          "scadenza": {
-            "name": "Scadenza"
-          },
-          "stato": {
-            "name": "Stato pagamento"
-          },
-          "periodo": {
-            "name": "Periodo"
-          },
-          "kwh": {
-            "name": "Energia fatturata"
-          },
-          "prezzo_medio": {
-            "name": "Prezzo medio"
-          },
-          "f1": {
-            "name": "Fascia F1"
-          },
-          "f2": {
-            "name": "Fascia F2"
-          },
-          "f3": {
-            "name": "Fascia F3"
-          },
-          "potenza_max": {
-            "name": "Potenza massima"
-          },
-          "totale_fatture": {
-            "name": "Totale fatture nello storico"
-          },
-          "fatture_non_pagate": {
-            "name": "Numero fatture non pagate"
-          },
-          "ultimo_aggiornamento": {
-            "name": "Ultimo aggiornamento"
-          },
-          "storico_mensile": {
-            "name": "Storico mensile"
-          }
-        }
-      },
-      "ultimo_consumo_kwh": {
-        "name": "Ultimo consumo mensile"
-      },
-      "spesa_annua": {
-        "name": "Spesa annua"
-      },
-      "consumo_annuo_totale": {
-        "name": "Consumo annuo totale"
-      },
-      "consumo_annuo_f1": {
-        "name": "Consumo annuo F1"
-      },
-      "consumo_annuo_f2": {
-        "name": "Consumo annuo F2"
-      },
-      "consumo_annuo_f3": {
-        "name": "Consumo annuo F3"
-      },
-      "stato_integrazione": {
-        "name": "Stato integrazione",
-        "state_attributes": {
-          "login_ok": {
-            "name": "Login riuscito"
-          },
-          "codice_cliente": {
-            "name": "Codice cliente"
-          },
-          "ultimo_aggiornamento": {
-            "name": "Ultimo aggiornamento"
-          },
-          "numero_fatture_totali": {
-            "name": "Totale fatture"
-          }
-        }
-      }
-    },
-    "binary_sensor": {
-      "fatture_non_pagate": {
-        "name": "Fatture non pagate"
-      }
-    },
-    "button": {
-      "scarica_storico": {
-        "name": "Scarica storico fatture"
-      },
-      "forza_aggiornamento": {
-        "name": "Forza aggiornamento"
-      },
-      "scarica_pdf_ultima": {
-        "name": "Scarica PDF ultima fattura"
-      }
-    }
-  },
-  "services": {
-    "scarica_pdf": {
-      "name": "Scarica PDF fattura"
-    },
-    "forza_aggiornamento": {
-      "name": "Forza aggiornamento"
-    },
-    "scarica_storico": {
-      "name": "Scarica storico fatture"
+      "already_configured": "Questo codice cliente è già configurato."
     }
   },
   "options": {
@@ -142,9 +30,64 @@
         "description": "Modifica le impostazioni dell'integrazione Segnoverde.",
         "data": {
           "scan_interval": "Intervallo di aggiornamento (ore)",
-          "download_folder": "Cartella download PDF (relativa a /config, vuoto per disabilitare)"
+          "download_folder": "Cartella download PDF (relativa a /config, vuoto per disabilitare)",
+          "auto_download_history": "Scarica automaticamente lo storico mancante"
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "ultima_fattura_importo": {
+        "name": "Ultima fattura importo",
+        "state_attributes": {
+          "numero_fattura": { "name": "Numero fattura" },
+          "scadenza": { "name": "Scadenza" },
+          "stato": { "name": "Stato pagamento" },
+          "periodo": { "name": "Periodo" },
+          "kwh": { "name": "Energia fatturata" },
+          "prezzo_medio": { "name": "Prezzo medio" },
+          "f1": { "name": "Fascia F1" },
+          "f2": { "name": "Fascia F2" },
+          "f3": { "name": "Fascia F3" },
+          "potenza_max": { "name": "Potenza massima" },
+          "totale_fatture": { "name": "Totale fatture nello storico" },
+          "fatture_non_pagate": { "name": "Numero fatture non pagate" },
+          "ultimo_aggiornamento": { "name": "Ultimo aggiornamento" },
+          "storico_mensile": { "name": "Storico mensile" }
+        }
+      },
+      "ultimo_consumo_kwh": { "name": "Ultimo consumo mensile" },
+      "spesa_annua": { "name": "Spesa annua" },
+      "consumo_annuo_totale": { "name": "Consumo annuo totale" },
+      "consumo_annuo_f1": { "name": "Consumo annuo F1" },
+      "consumo_annuo_f2": { "name": "Consumo annuo F2" },
+      "consumo_annuo_f3": { "name": "Consumo annuo F3" },
+      "stato_integrazione": {
+        "name": "Stato integrazione",
+        "state_attributes": {
+          "login_ok": { "name": "Login riuscito" },
+          "codice_cliente": { "name": "Codice cliente" },
+          "ultimo_aggiornamento": { "name": "Ultimo aggiornamento" },
+          "numero_fatture_totali": { "name": "Totale fatture" },
+          "sincronizzazione_storico": { "name": "Sincronizzazione storico in corso" },
+          "pdf_sincronizzati": { "name": "PDF sincronizzati" },
+          "pdf_da_sincronizzare": { "name": "PDF da sincronizzare" }
+        }
+      }
+    },
+    "binary_sensor": {
+      "fatture_non_pagate": { "name": "Fatture non pagate" }
+    },
+    "button": {
+      "scarica_storico": { "name": "Scarica storico fatture" },
+      "forza_aggiornamento": { "name": "Forza aggiornamento" },
+      "scarica_pdf_ultima": { "name": "Scarica PDF ultima fattura" }
+    }
+  },
+  "services": {
+    "scarica_pdf": { "name": "Scarica PDF fattura" },
+    "forza_aggiornamento": { "name": "Forza aggiornamento" },
+    "scarica_storico": { "name": "Scarica storico fatture" }
   }
 }

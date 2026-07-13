@@ -18,10 +18,12 @@ from .api import (
     SegnoverdeRegNotActiveError,
 )
 from .const import (
+    CONF_AUTO_DOWNLOAD_HISTORY,
     CONF_CODICE_CLIENTE,
     CONF_DOWNLOAD_FOLDER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    DEFAULT_AUTO_DOWNLOAD_HISTORY,
     DOMAIN,
     MIN_SCAN_INTERVAL_HOURS,
 )
@@ -54,6 +56,12 @@ def _schema_user(defaults: dict[str, Any] | None = None) -> vol.Schema:
                     )
                 },
             ): str,
+            vol.Optional(
+                CONF_AUTO_DOWNLOAD_HISTORY,
+                default=defaults.get(
+                    CONF_AUTO_DOWNLOAD_HISTORY, DEFAULT_AUTO_DOWNLOAD_HISTORY
+                ),
+            ): bool,
         }
     )
 
@@ -74,6 +82,12 @@ def _schema_options(defaults: dict[str, Any] | None = None) -> vol.Schema:
                     "suggested_value": defaults.get(CONF_DOWNLOAD_FOLDER, "segnoverde_pdfs")
                 },
             ): str,
+            vol.Optional(
+                CONF_AUTO_DOWNLOAD_HISTORY,
+                default=defaults.get(
+                    CONF_AUTO_DOWNLOAD_HISTORY, DEFAULT_AUTO_DOWNLOAD_HISTORY
+                ),
+            ): bool,
         }
     )
 
@@ -140,6 +154,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_DOWNLOAD_FOLDER: user_input.get(
                             CONF_DOWNLOAD_FOLDER, "segnoverde_pdfs"
                         ),
+                        CONF_AUTO_DOWNLOAD_HISTORY: user_input.get(
+                            CONF_AUTO_DOWNLOAD_HISTORY, DEFAULT_AUTO_DOWNLOAD_HISTORY
+                        ),
                     },
                 )
 
@@ -172,6 +189,7 @@ class SegnoverdeOptionsFlow(config_entries.OptionsFlow):
             **{
                 CONF_SCAN_INTERVAL: 12,
                 CONF_DOWNLOAD_FOLDER: "segnoverde_pdfs",
+                CONF_AUTO_DOWNLOAD_HISTORY: DEFAULT_AUTO_DOWNLOAD_HISTORY,
             },
             **self._config_entry.options,
         }

@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .coordinator import SegnoverdeCoordinator, SegnoverdeData
+from .coordinator import SegnoverdeCoordinator
 from .entity import SegnoverdeEntity
 
 

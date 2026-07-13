@@ -4,7 +4,7 @@ Integrazione non ufficiale per [Segnoverde S.p.A.](https://www.segnoverde.it/) c
 
 ![banner](images/banner.png)
 
-> ⚠️ **Disclaimer**: integrazione non ufficiale, non affiliata a Segnoverde S.p.A. Utilizza tecniche di scraping del portale clienti accessibile con Codice Cliente + Password. Le credenziali restano salvate nella tua istanza di Home Assistant (in `config_entries` crittografate) e non escono dal tuo sistema.
+> ⚠️ **Disclaimer**: integrazione non ufficiale, non affiliata a Segnoverde S.p.A. Utilizza tecniche di scraping del portale clienti accessibile con Codice Cliente + Password. Le credenziali restano nella configurazione locale di Home Assistant; proteggi l'accesso alla cartella `/config` e ai backup.
 
 ## Funzionalità
 
@@ -12,7 +12,7 @@ Integrazione non ufficiale per [Segnoverde S.p.A.](https://www.segnoverde.it/) c
 - 🧾 **Storico fatture** completo (numero, importo, scadenza, stato pagamento)
 - ⚡ **Dettaglio ultima bolletta** dal PDF: kWh totali, fasce F1/F2/F3, prezzo medio, potenza max
 - 📊 **Consumo annuo** per fascia e **spesa annua** aggiornata (letti dal PDF)
-- 📚 **Storico kWh mensili** (popolato progressivamente dal servizio `scarica_storico`)
+- 📚 **Storico kWh mensili** (popolato automaticamente in background; comportamento disattivabile da **Configura**)
 - ✅ **Binary sensor** "fatture non pagate" (ON quando c'è almeno una fattura da saldare)
 - 💾 **Download PDF bollette** in cartella configurabile (`/config/segnoverde_pdfs/`)
 
@@ -39,12 +39,12 @@ Il sensore `sensor.segnoverde_ultima_fattura_importo` espone l'attributo `storic
 
 ```json
 {
-  "05_2026": {"importo": 32.90, "kwh": 20.07, "stato": "PAGATA", "numero_fattura": "EE00867832/2026", "scadenza": "2026-07-06"},
-  "04_2026": {"importo": 53.11, "kwh": 101.84, "stato": "PAGATA", "numero_fattura": "EE00720407/2026", "scadenza": "2026-06-04"}
+  "05_2026": {"importo": 50.00, "kwh": 120.00, "stato": "PAGATA", "numero_fattura": "EE00000001/2026", "scadenza": "2026-07-01"},
+  "04_2026": {"importo": 45.00, "kwh": 100.00, "stato": "PAGATA", "numero_fattura": "EE00000002/2026", "scadenza": "2026-06-01"}
 }
 ```
 
-Gli **importi** sono disponibili per **tutti i mesi** fin dal primo (non richiedono il PDF), mentre i **kWh** vengono popolati progressivamente al download dei PDF (vedi servizio `scarica_storico` per lo storico completo).
+Gli **importi** sono disponibili per **tutti i mesi** fin dal primo avvio. I **kWh** vengono popolati automaticamente in background scaricando esclusivamente i PDF ancora mancanti; il button `scarica_storico` permette di rilanciare manualmente la sincronizzazione.
 
 ## Installazione
 
@@ -65,10 +65,11 @@ Copia la cartella `custom_components/segnoverde/` in `<config>/custom_components
 
 Nel flow di configurazione inserisci:
 
-- **Codice cliente** (es. `00085232`)
+- **Codice cliente** (es. `00000000`)
 - **Password** dell'area clienti
 - **Intervallo aggiornamento** (ore, predefinito 12, min 1)
 - **Cartella download PDF** (relativa a `/config`, predefinita `segnoverde_pdfs`)
+- **Scarica automaticamente lo storico mancante** (attivo per impostazione predefinita)
 
 ### Modificare le impostazioni in un secondo momento
 
@@ -78,7 +79,7 @@ Non è necessario reinstallare l'integrazione per cambiare parametri:
 2. Pulsante **Configura** (ingranaggio)
 3. Modifica **Intervallo di aggiornamento** e/o **Cartella download PDF** → **Salva**
 
-L'integrazione si ricarica automaticamente con i nuovi valori.
+L'integrazione si ricarica automaticamente con i nuovi valori. Puoi inoltre attivare/disattivare il popolamento automatico dello storico mancante.
 
 ## Azioni rapide (button) e servizi
 
@@ -151,9 +152,13 @@ Nella cartella [`docs/`](docs/) trovi due YAML pronti da incollare nella dashboa
 
 ## Limiti note
 
-- I dati kWh dettagliati provengono dal **PDF della singola bolletta**, quindi solo l'ultima viene scaricata automaticamente a ogni refresh. Per lo storico completo usa il servizio `segnoverde.scarica_storico` (una tantum, impiega qualche minuto).
+- I dati kWh dettagliati provengono dal **PDF della singola bolletta**. Al primo avvio l'integrazione popola automaticamente in background solo i mesi mancanti (circa una richiesta al secondo); l'opzione può essere disattivata da **Configura**.
 - L'autenticazione avviene di nuovo a ogni refresh (HTTP stateless via cookie di sessione). Segnoverde non espone API ufficiale quindi questo componente esegue scraping: se il portale cambia markup, l'integrazione potrebbe rompersi. Apri una issue se succede.
 - Per lo stesso motivo: se Segnoverde abilita CAPTCHA o 2FA, l'integrazione smetterà di funzionare finché non venga aggiornata.
+
+## Diagnostica
+
+Da **Impostazioni → Dispositivi e servizi → Segnoverde → menu ⋮ → Scarica diagnostica** puoi ottenere un file utile per le issue. Password, codice cliente, token di download e numeri fattura vengono oscurati automaticamente.
 
 ## Problemi noti
 

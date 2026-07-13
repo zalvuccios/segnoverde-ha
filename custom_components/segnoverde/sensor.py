@@ -1,7 +1,6 @@
 """Sensori Segnoverde."""
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -13,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CURRENCY_EURO, UnitOfEnergy, UnitOfPower
+from homeassistant.const import CURRENCY_EURO, UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -21,8 +20,6 @@ from homeassistant.helpers.typing import StateType
 from .const import DOMAIN
 from .coordinator import SegnoverdeCoordinator, SegnoverdeData
 from .entity import SegnoverdeEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -106,6 +103,9 @@ SENSORS: tuple[SegnoverdeSensorDescription, ...] = (
             "codice_cliente": d.codice_cliente,
             "ultimo_aggiornamento": d.last_update,
             "numero_fatture_totali": len(d.fatture),
+            "sincronizzazione_storico": d.history_sync_in_progress,
+            "pdf_sincronizzati": d.history_sync_done,
+            "pdf_da_sincronizzare": d.history_sync_total,
         },
         exists_fn=lambda d: True,
     ),
@@ -173,13 +173,11 @@ async def async_setup_entry(
 ) -> None:
     """Setup sensori Segnoverde."""
     coordinator: SegnoverdeCoordinator = hass.data[DOMAIN][entry.entry_id]
-    data = coordinator.data
-    entities = [
-        SegnoverdeSensor(coordinator, entry, desc)
-        for desc in SENSORS
-        if data is None or desc.exists_fn(data)
-    ]
-    async_add_entities(entities)
+    # Crea sempre tutte le entità: se un dato non è ancora disponibile,
+    # l'entità rimane unavailable e si attiva appena termina la sincronizzazione.
+    async_add_entities(
+        SegnoverdeSensor(coordinator, entry, desc) for desc in SENSORS
+    )
 
 
 class SegnoverdeSensor(SegnoverdeEntity, SensorEntity):

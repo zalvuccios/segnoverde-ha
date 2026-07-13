@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -18,10 +17,12 @@ from .api import (
     SegnoverdePwdExpiredError,
 )
 from .const import (
+    CONF_AUTO_DOWNLOAD_HISTORY,
     CONF_CODICE_CLIENTE,
     CONF_DOWNLOAD_FOLDER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    DEFAULT_AUTO_DOWNLOAD_HISTORY,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MIN_SCAN_INTERVAL,
@@ -95,7 +96,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Ricarica automaticamente l'integrazione quando si salvano le Opzioni.
+    entry.async_on_unload(entry.add_update_listener(async_update_options))
+
     await _async_register_services(hass, entry)
+
+    # Primo popolamento storico automatico, in background e senza bloccare
+    # l'avvio di Home Assistant. L'opzione è modificabile da "Configura".
+    auto_history = entry.options.get(
+        CONF_AUTO_DOWNLOAD_HISTORY, DEFAULT_AUTO_DOWNLOAD_HISTORY
+    )
+    if auto_history and coordinator.has_missing_history:
+        hass.async_create_task(
+            coordinator.async_scarica_storico(),
+            name=f"{DOMAIN}_storico_{entry.entry_id}",
+        )
     return True
 
 

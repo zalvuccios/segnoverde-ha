@@ -1,17 +1,16 @@
 """Client dell'area clienti Segnoverde."""
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import date
 from typing import Any
 
 import aiohttp
 from bs4 import BeautifulSoup
 
-from .const import BASE_URL, LOGIN_OK, LOGIN_PWDEXP, LOGIN_REGNONATT, LOGIN_NEWCDCLI
+from .const import BASE_URL, LOGIN_OK
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -267,11 +266,16 @@ class SegnoverdeApiClient:
         return fatture
 
     async def async_download_pdf(self, download_token: str) -> bytes:
-        """Scarica il PDF di una fattura dato il suo token downloadAllegato."""
-        return await self._get_bytes(
+        """Scarica e valida il PDF di una fattura."""
+        content = await self._get_bytes(
             f"{BASE_URL}/Home/DownloadAllegato?q={download_token}",
-            referer=f"{BASE_URL}/Home/Forniture",
+            referer=f"{BASE_URL}/Home/Fatture",
         )
+        if not content.startswith(b"%PDF-"):
+            raise SegnoverdeApiError(
+                "Il portale non ha restituito un PDF valido (sessione scaduta?)"
+            )
+        return content
 
     # Test login per config flow (con timeout)
     async def async_test_login(self) -> str:

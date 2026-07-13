@@ -1,10 +1,9 @@
 """Button entità Segnoverde (cliccabili dalla card Lovelace)."""
 from __future__ import annotations
 
-import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Awaitable
 
 from homeassistant.components.button import (
     ButtonEntity,
@@ -28,15 +27,11 @@ class SegnoverdeButtonDescription(ButtonEntityDescription):
 
 
 async def _press_scarica_storico(coord: SegnoverdeCoordinator) -> None:
-    """Esegue lo scarico storico in background; se già in corso, evita duplicazione."""
-    if getattr(coord, "_scarico_storico_in_corso", False):
-        _LOGGER.info("Scarico storico già in corso, ignoro pressione button")
-        return
-    setattr(coord, "_scarico_storico_in_corso", True)
-    try:
-        await coord.async_scarica_storico()
-    finally:
-        setattr(coord, "_scarico_storico_in_corso", False)
+    """Avvia la sincronizzazione in background; il coordinator evita doppioni."""
+    coord.hass.async_create_task(
+        coord.async_scarica_storico(),
+        name="segnoverde_sincronizzazione_storico",
+    )
 
 
 async def _press_forza_aggiornamento(coord: SegnoverdeCoordinator) -> None:

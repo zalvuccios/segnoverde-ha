@@ -4,8 +4,8 @@ scarica_pdf:
   fields:
     numero_fattura:
       name: Numero fattura
-      description: "Numero fattura (es. EE00867832/2026). Lasciare vuoto per scaricare l'ultima."
-      example: "EE00867832/2026"
+      description: "Numero fattura (es. EE00000000/2026). Lasciare vuoto per scaricare l'ultima."
+      example: "EE00000000/2026"
       required: false
       selector:
         text:

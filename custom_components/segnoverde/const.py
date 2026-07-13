@@ -10,6 +10,7 @@ CONF_CODICE_CLIENTE = "codice_cliente"
 CONF_PASSWORD = "password"
 CONF_DOWNLOAD_FOLDER = "download_folder"
 CONF_SCAN_INTERVAL = "scan_interval"
+CONF_AUTO_DOWNLOAD_HISTORY = "auto_download_history"
 
 DEFAULT_SCAN_INTERVAL = timedelta(hours=12)
 MIN_SCAN_INTERVAL = timedelta(minutes=30)
@@ -31,5 +32,4 @@ LOGIN_NEWCDCLI = "NEWCDCLI"
 
 PLATFORMS = ["sensor", "binary_sensor", "button"]
 
-CONF_SCAN_INTERVAL_HOURS_KEY = "scan_interval"
-CONF_DOWNLOAD_FOLDER_KEY = "download_folder"
+DEFAULT_AUTO_DOWNLOAD_HISTORY = True

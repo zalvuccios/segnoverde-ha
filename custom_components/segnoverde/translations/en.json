@@ -8,7 +8,8 @@
           "codice_cliente": "Codice cliente",
           "password": "Password",
           "scan_interval": "Intervallo di aggiornamento (ore)",
-          "download_folder": "Cartella download PDF (relativa a /config)"
+          "download_folder": "Cartella download PDF (relativa a /config)",
+          "auto_download_history": "Scarica automaticamente lo storico mancante"
         }
       }
     },
@@ -29,7 +30,8 @@
         "description": "Modifica le impostazioni dell'integrazione Segnoverde.",
         "data": {
           "scan_interval": "Intervallo di aggiornamento (ore)",
-          "download_folder": "Cartella download PDF (relativa a /config, vuoto per disabilitare)"
+          "download_folder": "Cartella download PDF (relativa a /config, vuoto per disabilitare)",
+          "auto_download_history": "Scarica automaticamente lo storico mancante"
         }
       }
     }
@@ -67,7 +69,10 @@
           "login_ok": { "name": "Login riuscito" },
           "codice_cliente": { "name": "Codice cliente" },
           "ultimo_aggiornamento": { "name": "Ultimo aggiornamento" },
-          "numero_fatture_totali": { "name": "Totale fatture" }
+          "numero_fatture_totali": { "name": "Totale fatture" },
+          "sincronizzazione_storico": { "name": "Sincronizzazione storico in corso" },
+          "pdf_sincronizzati": { "name": "PDF sincronizzati" },
+          "pdf_da_sincronizzare": { "name": "PDF da sincronizzare" }
         }
       }
     },
