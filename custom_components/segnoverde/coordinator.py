@@ -97,7 +97,10 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         self.history_sync_in_progress = False
         self.history_sync_done = 0
         self.history_sync_total = 0
-        self._load_cache()
+
+    async def async_load_cache(self) -> None:
+        """Carica il cache dal disco senza bloccare l'event loop."""
+        await self.hass.async_add_executor_job(self._load_cache)
 
     @property
     def has_missing_history(self) -> bool:
@@ -117,7 +120,11 @@ class SegnoverdeCoordinator(DataUpdateCoordinator):
         self.async_set_updated_data(self.data)
 
     def _load_cache(self) -> None:
-        """Carica lo storico kWh precedentemente scaricato dal cache file."""
+        """Carica lo storico kWh precedentemente scaricato dal cache file.
+
+        Eseguito sempre tramite ``async_load_cache`` (executor) per evitare
+        blocking I/O nell'event loop.
+        """
         try:
             with open(self._cache_file, encoding="utf-8") as fp:
                 cache = json.load(fp)
